@@ -45,6 +45,7 @@ int main() {
 
     struct addrinfo *hostaddr;
     int addrinfocheck = getaddrinfo(0, "8080", &hints, &hostaddr);
+    // getaddrinfo returns not int on failure
     if (addrinfocheck < 0) {
         printf("getaddrinfo() failed.\n");
         return 1;
@@ -81,13 +82,23 @@ int main() {
         return 1;
     }
 
-    send(socket_client, "Connected!\n", strlen("Connected!\n"), 0);
+    // getting socket info
+    // struct sockaddr client_addr;
+    // memset(&client_addr, 0, sizeof(client_addr));
+    // socklen_t client_addr_len = sizeof(client_addr);
+    // int socknameerr = getsockname(socket_client, &client_addr, &client_addr_len);
+    // if (socknameerr < 0 ) {
+    //     printf("getsockname() failed. (%d)\n", GETSOCKETERRNO());
+    // }
+    // printf("%s", client_addr.sa_data);
     
     printf("Receiving Messages. \n");
-    
     while(1) {
+
+    // TODO: add fork(), -- int val = fork(); ... CLOSESOCKET()
+
     // Finds the number of bytes of message
-    char message_len[4];
+    char message_len[1];
     memset(message_len, 0, sizeof(message_len));
     recv(socket_client, message_len, strlen(message_len), 0);
     

@@ -1,0 +1,75 @@
+// macros provided by Lewis Van Winkle
+#if defined(_WIN32)
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600
+#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+
+#else
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <errno.h>
+
+#endif
+
+
+#if defined(_WIN32)
+#define ISVALIDSOCKET(s) ((s) != INVALID_SOCKET)
+#define CLOSESOCKET(s) closesocket(s)
+#define GETSOCKETERRNO() (WSAGetLastError())
+
+#else
+#define ISVALIDSOCKET(s) ((s) >= 0)
+#define CLOSESOCKET(s) close(s)
+#define SOCKET int
+#define GETSOCKETERRNO() (errno)
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// TODO, client and server aren't communicating for some reason 
+
+int main() {
+    struct addrinfo hints; 
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    struct addrinfo* serveraddr;
+    memset(&serveraddr, 0, sizeof(serveraddr));
+    getaddrinfo(0, "8080", &hints, &serveraddr);
+
+    SOCKET server_soc = socket(serveraddr->ai_family, serveraddr->ai_socktype, 
+            serveraddr->ai_protocol);
+    if(server_soc<0) {
+        printf("socket err.\n");
+        return 1;
+    }
+
+    freeaddrinfo(serveraddr);
+    int status = connect(server_soc, serveraddr->ai_addr, serveraddr->ai_addrlen);
+    if (status < 0) {
+        printf("Connect error.\n");
+        return 1;
+    }
+    printf("Connected\n");
+    char msg[100];
+    memset(msg, 0, sizeof(msg));
+
+    printf("getting message\n");
+    send(server_soc, "smth", strlen("smth"), 0);
+   
+    CLOSESOCKET(server_soc);
+
+
+    return 0;
+}
