@@ -30,6 +30,7 @@
 #define SOCKET int
 #define GETSOCKETERRNO() (errno)
 #endif
+// macros provided by Lewis Van Winkle
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -83,24 +84,23 @@ int main() {
     }
 
     // getting socket info
-    // struct sockaddr client_addr;
-    // memset(&client_addr, 0, sizeof(client_addr));
-    // socklen_t client_addr_len = sizeof(client_addr);
-    // int socknameerr = getsockname(socket_client, &client_addr, &client_addr_len);
-    // if (socknameerr < 0 ) {
-    //     printf("getsockname() failed. (%d)\n", GETSOCKETERRNO());
-    // }
-    // printf("%s", client_addr.sa_data);
+    struct sockaddr client_addr;
+    memset(&client_addr, 0, sizeof(client_addr));
+    socklen_t client_addr_len = sizeof(client_addr);
+    int socknameerr = getsockname(socket_client, &client_addr, &client_addr_len);
+    if (socknameerr < 0 ) {
+        printf("getsockname() failed. (%d)\n", GETSOCKETERRNO());
+    }
+    printf("%s", client_addr.sa_data);
     
     printf("Receiving Messages. \n");
     while(1) {
 
-    // TODO: add fork(), -- int val = fork(); ... CLOSESOCKET()
-
     // Finds the number of bytes of message
-    char message_len[1];
+    char message_len[4];
     memset(message_len, 0, sizeof(message_len));
-    recv(socket_client, message_len, strlen(message_len), 0);
+    recv(socket_client, message_len, sizeof(message_len), 0);
+    printf("%s\n", message_len);
     
     // TODO: catch errors
     // Recv according to bytes
@@ -109,6 +109,7 @@ int main() {
     recv(socket_client, fin_message, strlen(fin_message), 0);
     printf("%s", fin_message);
 
+    // TODO: encryption 
     int senderr = send(socket_client, fin_message, strlen(fin_message), 0);
     if(senderr < 0)
     {
@@ -118,11 +119,8 @@ int main() {
 
     }
 
-    // recv ?   
+    // recv ?       
 
-    // for send on client side use MSG_CONFIRM in send to get reply back
-    
-
-// Try Ncurses
+    // Try Ncurses
     return 0;
 }

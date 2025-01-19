@@ -50,24 +50,25 @@ int main() {
 
     SOCKET server_soc = socket(serveraddr->ai_family, serveraddr->ai_socktype, 
             serveraddr->ai_protocol);
-    if(server_soc<0) {
+    if(!ISVALIDSOCKET(server_soc)) {
         printf("socket err.\n");
         return 1;
     }
 
-    freeaddrinfo(serveraddr);
     int status = connect(server_soc, serveraddr->ai_addr, serveraddr->ai_addrlen);
     if (status < 0) {
         printf("Connect error.\n");
         return 1;
     }
     printf("Connected\n");
-    char msg[100];
-    memset(msg, 0, sizeof(msg));
+    freeaddrinfo(serveraddr);
 
-    printf("getting message\n");
-    send(server_soc, "smth", strlen("smth"), 0);
-   
+    char msg[100];
+    // memset(msg, 0, sizeof(msg));
+
+    printf("sending message\n");
+    int sentbytes = send(server_soc, "smth", strlen("smth"), 0);
+    printf("%d", sentbytes);
     CLOSESOCKET(server_soc);
 
 
