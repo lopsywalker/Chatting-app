@@ -12,12 +12,12 @@ typedef struct h_table {
     size_t num_of_elems;
 }  table_t;
 
-char[] table_search(table_t table, size_t table_size, SOCKET* key) {
+char* table_search(table_t *table, size_t table_size, SOCKET* key) {
     for (size_t i = 0; i < table_size; i++)
     {
-    if(users[i].key == key)
+    if(table->table[i].key == key)
         {
-            return users[i].username;
+            return table->table[i].username;
         }            
     }
     return NULL;
@@ -25,14 +25,14 @@ char[] table_search(table_t table, size_t table_size, SOCKET* key) {
 
 void append_element(table_t *table, table_elem appending_elem) {
     if(table->table_size <= table->num_of_elems) {
-        realloc(table, (table->table_size) * 2);
-        table[(table->num_of_elems) + 1] = appending_elem;
+        table = realloc(table, (table->table_size) * 2);
+        table->table[(table->num_of_elems) + 1] = appending_elem;
         table->num_of_elems = table->num_of_elems + 1;  
         return;
     }
 
 // else
-table[(table->num_of_elems) + 1] = appending_elem;
+table->table[(table->num_of_elems) + 1] = appending_elem;
 table->num_of_elems = table->num_of_elems + 1;  
 return;
 }

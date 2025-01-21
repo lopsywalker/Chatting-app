@@ -35,8 +35,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "Hashtable.c"
 
-int main() {
+int main() {    
+
+    // Hash table declaration 
+    table_t *h_table = (table_t*) calloc(1, sizeof(table_t));
+    table_elem *table = (table_elem*) calloc(1, sizeof(table_elem));
+    h_table -> table = table; 
+    h_table -> table_size = 1;
+    h_table -> num_of_elems = 0;
 
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
@@ -122,5 +130,7 @@ int main() {
     // recv ?       
 
     // Try Ncurses
+    free(h_table);
+    free(table);
     return 0;
 }
