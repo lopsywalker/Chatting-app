@@ -91,19 +91,37 @@ int main() {
         return 1;
     }
 
+
+
     // getting socket info
-    struct sockaddr client_addr;
-    memset(&client_addr, 0, sizeof(client_addr));
-    socklen_t client_addr_len = sizeof(client_addr);
-    int socknameerr = getsockname(socket_client, &client_addr, &client_addr_len);
-    if (socknameerr < 0 ) {
-        printf("getsockname() failed. (%d)\n", GETSOCKETERRNO());
-    }
-    printf("%s", client_addr.sa_data);
+    // TODO getting client socket info to log
+    
+    // struct sockaddr client_addr;
+    // memset(&client_addr, 0, sizeof(client_addr));
+    // socklen_t client_addr_len = sizeof(client_addr);
+    // int socknameerr = getpeername(socket_client, &client_addr, &client_addr_len);
+    // if (socknameerr < 0 ) {
+    //     printf("getsockname() failed. (%d)\n", GETSOCKETERRNO());
+    // }
+    // printf("%s %d", client_addr.sa_data, client_addr.sa_family);
     
     printf("Receiving Messages. \n");
-    while(1) {
 
+    int child = fork();
+    if (child == 0) {
+    
+    char username_conf[] = {"What is your username?\n"};
+    char fin_username[32];
+    memset(fin_username, 0, sizeof(fin_username));
+
+    send(socket_client, username_conf, strlen(username_conf), 0);
+
+    recv(socket_client, fin_username, sizeof(fin_username), 0);
+
+    table_elem new_user = {&socket_client, fin_username};
+    append_element(h_table, new_user);
+
+    while(1) {
     // Finds the number of bytes of message
     char message_len[4];
     memset(message_len, 0, sizeof(message_len));
@@ -123,9 +141,14 @@ int main() {
     {
         printf("send() failed.\n");
         return 1;
-    }
+    } 
 
-    }
+    }  // while(1)
+ 
+    } // if child == 0
+
+    // closes accepted socket
+    CLOSESOCKET(socket_client);
 
     // recv ?       
 
