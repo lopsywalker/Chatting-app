@@ -90,6 +90,7 @@ int main() {
         printf("accept() failed. (%d)\n", GETSOCKETERRNO());
         return 1;
     }
+    freeaddrinfo(hostaddr);
 
 
 
@@ -108,18 +109,23 @@ int main() {
     printf("Receiving Messages. \n");
 
     int child = fork();
+
     if (child == 0) {
-    
+    printf("forked process\n");
     char username_conf[] = {"What is your username?\n"};
     char fin_username[32];
     memset(fin_username, 0, sizeof(fin_username));
 
     send(socket_client, username_conf, strlen(username_conf), 0);
 
-    recv(socket_client, fin_username, sizeof(fin_username), 0);
+    recv(socket_client, fin_username, 32, 0);
+    printf("%s\n", fin_username);
 
+    // TODO: buffer overflow below
     table_elem new_user = {&socket_client, fin_username};
     append_element(h_table, new_user);
+
+    // TODO : Buffer overflows when code has loop below (for checking username)
 
     while(1) {
     // Finds the number of bytes of message

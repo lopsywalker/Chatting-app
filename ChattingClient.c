@@ -63,12 +63,24 @@ int main() {
     printf("Connected\n");
     freeaddrinfo(serveraddr);
 
-    char msg[100];
-    // memset(msg, 0, sizeof(msg));
 
-    printf("sending message\n");
-    int sentbytes = send(server_soc, "smth", strlen("smth"), 0);
-    printf("%d", sentbytes);
+    // Username conf
+    char username_query[32];
+    recv(server_soc, username_query, (size_t) strlen("What is your username?\n"), 0 );
+    printf("%s", username_query);
+
+    char username[32];
+    fgets(username, sizeof(username), stdin);
+
+    send(server_soc, username, sizeof(username), 0);
+    // Username conf
+
+    // char msg[100];
+    // // memset(msg, 0, sizeof(msg));
+
+    // printf("sending message\n");
+    // int sentbytes = send(server_soc, "smth", strlen("smth"), 0);
+    // printf("%d", sentbytes);
     CLOSESOCKET(server_soc);
 
 
