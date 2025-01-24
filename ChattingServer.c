@@ -121,7 +121,6 @@ int main() {
     recv(socket_client, fin_username, 32, 0);
     printf("%s\n", fin_username);
 
-    // TODO: buffer overflow below
     table_elem new_user = {&socket_client, fin_username};
     append_element(h_table, new_user);
 

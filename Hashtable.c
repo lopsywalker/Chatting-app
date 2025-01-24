@@ -7,9 +7,9 @@ typedef struct table_element {
 } table_elem;
 
 typedef struct h_table {
-    table_elem table[];
     size_t table_size;
     size_t num_of_elems;
+    table_elem *table;
 }  table_t;
 
 char* table_search(table_t *table, size_t table_size, SOCKET* key) {
@@ -33,10 +33,15 @@ void append_element(table_t *table, table_elem appending_elem) {
         return;
     }
 
-// else
-table->table[(table->num_of_elems) + 1] = appending_elem;
-table->num_of_elems = table->num_of_elems + 1;  
-return;
+    else if (table->num_of_elems != 0)
+    {
+        table->table[(table->num_of_elems) + 1] = appending_elem;
+        table->num_of_elems = table->num_of_elems + 1;  
+        return;
+    }
+
+    table->table[0] = appending_elem;
+    table->num_of_elems = table->num_of_elems + 1;
 }
 
 // TODO: remove element
