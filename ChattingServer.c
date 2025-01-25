@@ -82,90 +82,96 @@ int main() {
 
 
     printf("Waiting for connections.\n");
-    struct sockaddr_storage client_address;
-    socklen_t client_len = sizeof(client_address);
-    SOCKET socket_client = accept(socket_listen,
-            (struct sockaddr*) &client_address, &client_len);
-    if (!ISVALIDSOCKET(socket_client)) {
-        printf("accept() failed. (%d)\n", GETSOCKETERRNO());
-        return 1;
-    }
-    freeaddrinfo(hostaddr);
-
-
-
-    // getting socket info
-    // TODO getting client socket info to log
-    
-    // struct sockaddr client_addr;
-    // memset(&client_addr, 0, sizeof(client_addr));
-    // socklen_t client_addr_len = sizeof(client_addr);
-    // int socknameerr = getpeername(socket_client, &client_addr, &client_addr_len);
-    // if (socknameerr < 0 ) {
-    //     printf("getsockname() failed. (%d)\n", GETSOCKETERRNO());
-    // }
-    // printf("%s %d", client_addr.sa_data, client_addr.sa_family);
-    
-    printf("Receiving Messages. \n");
-
-    pid_t child = fork();
-
-
-    if (child == 0) {
-    printf("forked process\n");
-    char username_conf[] = {"What is your username?\n"};
-    char fin_username[32];
-    memset(fin_username, 0, sizeof(fin_username));
-
-    send(socket_client, username_conf, strlen(username_conf), 0);
-
-    recv(socket_client, fin_username, 32, 0);
-    printf("%s\n", fin_username);
-
-    table_elem new_user = {&socket_client, fin_username};
-    append_element(user_table, new_user);
-
-    // TODO : Buffer overflows when code has loop below (for checking username)
 
     while(1) {
-    // Finds the number of bytes of message
-    char message_len[4];
-    memset(message_len, 0, sizeof(message_len));
-    recv(socket_client, message_len, sizeof(message_len), 0);
-    printf("%s\n", message_len);
-    
-    // TODO: catch errors
-    // Recv according to bytes
-    char fin_message[(int) strtol(message_len, NULL, 10)];
-    memset(fin_message, 0, sizeof(fin_message));
-    recv(socket_client, fin_message, strlen(fin_message), 0);
-    printf("%s", fin_message);
-
-    // TODO: encryption 
-    for(int i = 0; i < user_table->num_of_elems; i++)
-    {
-        if(*(user_table->table->key) != socket_client)
-        {
-            int senderr = send(*(user_table->table->key) , fin_message, strlen(fin_message), 0);
-            if(senderr < 0)
-            {
-                printf("send() failed.\n");
-                return 1;
-            }
+        struct sockaddr_storage client_address;
+        socklen_t client_len = sizeof(client_address);
+        SOCKET socket_client = accept(socket_listen,
+                (struct sockaddr*) &client_address, &client_len);
+        if (!ISVALIDSOCKET(socket_client)) {
+            printf("accept() failed. (%d)\n", GETSOCKETERRNO());
+            return 1;
         }
-         
-    }
+        freeaddrinfo(hostaddr);
 
+        // getting socket info
+        // TODO getting client socket info to log
+        
+        // struct sockaddr client_addr;
+        // memset(&client_addr, 0, sizeof(client_addr));
+        // socklen_t client_addr_len = sizeof(client_addr);
+        // int socknameerr = getpeername(socket_client, &client_addr, &client_addr_len);
+        // if (socknameerr < 0 ) {
+        //     printf("getsockname() failed. (%d)\n", GETSOCKETERRNO());
+        // }
+        // printf("%s %d", client_addr.sa_data, client_addr.sa_family);
+        
+        printf("Receiving Messages. \n");
+
+        pid_t child = fork();
+
+        if (child == 0) {
+            CLOSESOCKET(socket_listen);
+            printf("forked process\n");
+            char username_conf[] = {"What is your username?\n"};
+            char fin_username[32];
+            memset(fin_username, 0, sizeof(fin_username));
+
+            send(socket_client, username_conf, strlen(username_conf), 0);
+
+            recv(socket_client, fin_username, 32, 0);
+            printf("%s\n", fin_username);
+
+            table_elem new_user = {&socket_client, fin_username};
+            append_element(user_table, new_user);
+
+            // TODO : Buffer overflows when code has loop below (for checking username)
+
+            while(1) {
+                // Finds the number of bytes of message
+                char message_len[4];
+                memset(message_len, 0, sizeof(message_len));
+                recv(socket_client, message_len, sizeof(message_len), 0);
+                printf("%s\n", message_len);
+                
+                // TODO: catch errors
+                // Recv according to bytes
+                char fin_message[(int) strtol(message_len, NULL, 10)];
+                memset(fin_message, 0, sizeof(fin_message));
+                recv(socket_client, fin_message, strlen(fin_message), 0);
+                printf("%s", fin_message);
+
+                // TODO: encryption 
+                for(int i = 0; i < user_table->num_of_elems; i++)
+                {
+                    if(*(user_table->table->key) != socket_client)
+                    {
+                        int senderr = send(*(user_table->table->key) , fin_message, strlen(fin_message), 0);
+                        if(senderr < 0)
+                        {
+                            printf("send() failed.\n");
+                            return 1;
+                        }
+                    }
+                    
+                }
+
+            } // while(1)
+            
+
+        } // if child == 0
+
+        CLOSESOCKET(socket_client);
+        
     } // while(1)
- 
-    } // if child == 0
+
 
     // closes accepted socket
-    CLOSESOCKET(socket_client);
 
     // recv ?       
 
     // Try Ncurses
+    CLOSESOCKET(socket_listen);
     free(user_table);
     free(table);
     return 0;
