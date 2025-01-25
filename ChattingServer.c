@@ -35,16 +35,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "Hashtable.c"
+#include "Hashtable.h"
 
 int main() {    
 
     // Hash table declaration 
-    table_t *h_table = (table_t*) calloc(1, sizeof(table_t));
+    table_t *user_table = (table_t*) calloc(1, sizeof(table_t));
     table_elem *table = (table_elem*) calloc(1, sizeof(table_elem));
-    h_table -> table = table; 
-    h_table -> table_size = 1;
-    h_table -> num_of_elems = 0;
+    user_table -> table = table; 
+    user_table -> table_size = 1;
+    user_table -> num_of_elems = 0;
 
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
@@ -53,7 +53,7 @@ int main() {
     hints.ai_flags = AI_PASSIVE; 
 
     struct addrinfo *hostaddr;
-    int addrinfocheck = getaddrinfo(0, "8080", &hints, &hostaddr);
+    int addrinfocheck = getaddrinfo("localhost", "8080", &hints, &hostaddr);
     // getaddrinfo returns not int on failure
     if (addrinfocheck < 0) {
         printf("getaddrinfo() failed.\n");
@@ -108,7 +108,8 @@ int main() {
     
     printf("Receiving Messages. \n");
 
-    int child = fork();
+    pid_t child = fork();
+
 
     if (child == 0) {
     printf("forked process\n");
@@ -122,7 +123,7 @@ int main() {
     printf("%s\n", fin_username);
 
     table_elem new_user = {&socket_client, fin_username};
-    append_element(h_table, new_user);
+    append_element(user_table, new_user);
 
     // TODO : Buffer overflows when code has loop below (for checking username)
 
@@ -141,14 +142,21 @@ int main() {
     printf("%s", fin_message);
 
     // TODO: encryption 
-    int senderr = send(socket_client, fin_message, strlen(fin_message), 0);
-    if(senderr < 0)
+    for(int i = 0; i < user_table->num_of_elems; i++)
     {
-        printf("send() failed.\n");
-        return 1;
-    } 
+        if(*(user_table->table->key) != socket_client)
+        {
+            int senderr = send(*(user_table->table->key) , fin_message, strlen(fin_message), 0);
+            if(senderr < 0)
+            {
+                printf("send() failed.\n");
+                return 1;
+            }
+        }
+         
+    }
 
-    }  // while(1)
+    } // while(1)
  
     } // if child == 0
 
@@ -158,7 +166,7 @@ int main() {
     // recv ?       
 
     // Try Ncurses
-    free(h_table);
+    free(user_table);
     free(table);
     return 0;
 }

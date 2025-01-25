@@ -46,7 +46,7 @@ int main() {
 
     struct addrinfo* serveraddr;
     memset(&serveraddr, 0, sizeof(serveraddr));
-    getaddrinfo(0, "8080", &hints, &serveraddr);
+    getaddrinfo("0", "8080", &hints, &serveraddr);
 
     SOCKET server_soc = socket(serveraddr->ai_family, serveraddr->ai_socktype, 
             serveraddr->ai_protocol);
@@ -73,16 +73,29 @@ int main() {
     fgets(username, sizeof(username), stdin);
 
     send(server_soc, username, sizeof(username), 0);
+
     // Username conf
 
-    // char msg[100];
-    // // memset(msg, 0, sizeof(msg));
+    while(1)
+    {
+    char readfromstdin[4096];
+    memset(readfromstdin, 0, sizeof(readfromstdin));
+    fgets(readfromstdin, sizeof(readfromstdin), stdin);
+    
+    // char msglen[8];
+    // memset(msglen, 0, sizeof(msglen));
+    // itoa(strlen(readfromstdin), msglen, 10);
 
-    // printf("sending message\n");
-    // int sentbytes = send(server_soc, "smth", strlen("smth"), 0);
-    // printf("%d", sentbytes);
+    // send(server_soc, msglen, strlen(msglen), 0);
+
+    send(server_soc, readfromstdin, strlen(readfromstdin), 0);
+
+    char recv_msg[4096];
+    memset(recv_msg, 0, sizeof(recv_msg)); 
+    recv(server_soc, recv_msg, sizeof(recv_msg), 0);
+    }
+
     CLOSESOCKET(server_soc);
-
 
     return 0;
 }
