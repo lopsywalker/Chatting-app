@@ -73,6 +73,8 @@ int main() {
         printf("bind() failed. %d\n", GETSOCKETERRNO());
         return 1;
     }
+    // double freeaddr was in while loop
+    freeaddrinfo(hostaddr);
 
     int listenerr = listen(socket_listen, 5);
     if (listenerr < 0) {
@@ -92,7 +94,6 @@ int main() {
             printf("accept() failed. (%d)\n", GETSOCKETERRNO());
             return 1;
         }
-        freeaddrinfo(hostaddr);
 
         // getting socket info
         // TODO getting client socket info to log
@@ -129,24 +130,28 @@ int main() {
 
             while(1) {
                 // Finds the number of bytes of message
-                char message_len[4];
-                memset(message_len, 0, sizeof(message_len));
-                recv(socket_client, message_len, sizeof(message_len), 0);
-                printf("%s\n", message_len);
+                // char message_len[4];
+                // memset(message_len, 0, sizeof(message_len));
+                // recv(socket_client, message_len, sizeof(message_len), 0);
+                // printf("%s\n", message_len);
                 
                 // TODO: catch errors
                 // Recv according to bytes
-                char fin_message[(int) strtol(message_len, NULL, 10)];
+                // char fin_message[(int) strtol(message_len, NULL, 10)];
+                char fin_message[4096];
                 memset(fin_message, 0, sizeof(fin_message));
-                recv(socket_client, fin_message, strlen(fin_message), 0);
-                printf("%s", fin_message);
+                recv(socket_client, fin_message, sizeof(fin_message), 0);
+                
+                
 
                 // TODO: encryption 
                 for(int i = 0; i < user_table->num_of_elems; i++)
                 {
-                    if(*(user_table->table->key) != socket_client)
+                    printf("%s\n",(user_table->table[i].username));
+                    if(*(user_table->table[i].key) != socket_client)
                     {
-                        int senderr = send(*(user_table->table->key) , fin_message, strlen(fin_message), 0);
+                        int senderr = send(*(user_table->table[i].key) , fin_message, strlen(fin_message), 0);
+                        printf("%s: %s\n", (user_table->table[i].username), fin_message);
                         if(senderr < 0)
                         {
                             printf("send() failed.\n");

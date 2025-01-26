@@ -90,9 +90,10 @@ int main() {
 
     send(server_soc, readfromstdin, strlen(readfromstdin), 0);
 
-    char recv_msg[4096];
-    memset(recv_msg, 0, sizeof(recv_msg)); 
-    recv(server_soc, recv_msg, sizeof(recv_msg), 0);
+    // char recv_msg[4096];
+    // memset(recv_msg, 0, sizeof(recv_msg)); 
+    // recv(server_soc, recv_msg, sizeof(recv_msg), 0);
+    // printf("%s\n",recv_msg);
     }
 
     CLOSESOCKET(server_soc);

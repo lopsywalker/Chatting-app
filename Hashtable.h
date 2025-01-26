@@ -23,7 +23,6 @@ char* table_search(table_t *table, size_t table_size, SOCKET* key) {
     return NULL;
 }
 
-// TODO: just iterate through it and add elements like that
 void append_element(table_t *table, table_elem appending_elem) {
     if(table->table_size <= table->num_of_elems) {
         table = realloc(table, (table->table_size) * 2);
