@@ -1,5 +1,5 @@
-#include <stdio.h>
 #include <stdlib.h>
+#define SOCKET int 
 
 typedef struct table_element {
     SOCKET* key;
@@ -25,7 +25,7 @@ char* table_search(table_t *table, size_t table_size, SOCKET* key) {
 
 void append_element(table_t *table, table_elem appending_elem) {
     if(table->table_size <= table->num_of_elems) {
-        table = realloc(table, (table->table_size) * 2);
+        realloc(table, (table->table_size) * 2);
         table->table_size = table->table_size * 2; 
         table->table[(table->num_of_elems) + 1] = appending_elem;
         table->num_of_elems = table->num_of_elems + 1;  
