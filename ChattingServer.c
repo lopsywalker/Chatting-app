@@ -85,6 +85,8 @@ int main() {
 
     printf("Waiting for connections.\n");
 
+    // Perhaps using mmap for shared processes? (fork)
+
     while(1) {
         struct sockaddr_storage client_address;
         socklen_t client_len = sizeof(client_address);
