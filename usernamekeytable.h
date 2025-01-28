@@ -15,7 +15,7 @@ typedef struct h_table {
 char* table_search(table_t *table, size_t table_size, SOCKET* key) {
     for (size_t i = 0; i < table_size; i++)
     {
-    if(table->table[i].key == key)
+        if(table->table[i].key == key)
         {
             return table->table[i].username;
         }            
@@ -25,22 +25,24 @@ char* table_search(table_t *table, size_t table_size, SOCKET* key) {
 
 void append_element(table_t *table, table_elem appending_elem) {
     if(table->table_size <= table->num_of_elems) {
-        realloc(table, (table->table_size) * 2);
-        table->table_size = table->table_size * 2; 
-        table->table[(table->num_of_elems) + 1] = appending_elem;
-        table->num_of_elems = table->num_of_elems + 1;  
-        return;
+        realloc(table, table->table_size*2);
+        table->table_size*2;
     }
-
-    else if (table->num_of_elems != 0)
-    {
-        table->table[(table->num_of_elems) + 1] = appending_elem;
-        table->num_of_elems = table->num_of_elems + 1;  
-        return;
+    for(int i = 0; i < table->table_size; i++) {
+        if((table->table[i].key == NULL) && (table->table[i].username == NULL)) {
+            table->table[i].key = appending_elem.key;
+            table->table[i].username = appending_elem.username;
+            return;
+        }
     }
-
-    table->table[0] = appending_elem;
-    table->num_of_elems = table->num_of_elems + 1;
 }
 
-// TODO: remove element
+void remove_element(table_t *table, table_elem removing_elem) {
+    for (int i = 0; i < table->num_of_elems; i++) {
+        if(removing_elem.key == table->table[i].key) {
+            table->table[i].key = NULL;
+            table->table[i].username = NULL;
+            return;
+        }
+    }
+}

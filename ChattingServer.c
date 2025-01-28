@@ -37,20 +37,25 @@
 #include <stdlib.h>
 #include <string.h>
 #include "usernamekeytable.h"
+#include "pollsockhandling.h"
 
 int main() {    
 
-    // Hash table declaration 
+    // Hash table initialization & declaration 
     table_t *user_table = (table_t*) calloc(1, sizeof(table_t));
     table_elem *table = (table_elem*) calloc(1, sizeof(table_elem));
     user_table -> table = table; 
     user_table -> table_size = 1;
     user_table -> num_of_elems = 0;
 
-    // Pollfd array declaration 
-    struct pollfd *pollsocket_arr = calloc(1, sizeof(struct pollfd));
+    // Pollfd array initialization & declaration 
+    pfdhandler_t *pfthander = calloc(1, sizeof(pfthander));
+    struct pollfd *pollsocket_ptr = calloc(1, sizeof(struct pollfd));
+    pfthander->pollfd_ptr = pollsocket_ptr;
+    pfthander->pollfd_ptr = 1;
+    pfthander->pollfd_num = 0;
     
-
+    // getaddrinfo hints
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
@@ -81,15 +86,40 @@ int main() {
     // double freeaddr was in while loop
     freeaddrinfo(hostaddr);
 
-    int listenerr = listen(socket_listen, 5);
-    if (listenerr < 0) {
-        printf("listen() failed. %d\n", GETSOCKETERRNO());
-        return 1;
-    }
+    // Dont need to use listen for poll()? 
+    // int listenerr = listen(socket_listen, 5);
+    // if (listenerr < 0) {
+    //     printf("listen() failed. %d\n", GETSOCKETERRNO());
+    //     return 1;
+    // }
+
+    // Poll() for windows might be WSAPoll() ? 
+    // last arg for poll is timeout (-1 means forever)
+    // if timeout is made active poll will return 0 when it fully times out
 
 
+    // Create listener poll fd for appending 
+    struct pollfd *listenerfd = (struct pollfd *) calloc(1, sizeof(struct pollfd *)); 
+    int poll_event = poll(pfthander->pollfd_ptr, pfthander->pollfd_num, -1);
+    listenerfd->fd = socket_listen; 
+    listenerfd->events = POLLIN;
+    append_pollfd(pfthander, listenerfd);
+    // Decide if you want to put the listener socket in manually
+    // Since the poll() call needs to be in the while loop
 
     printf("Waiting for connections.\n");
+
+    while(1) {
+    // 
+    if (poll_event >= 0) {
+    // for(...) { if poll.revents == (some event); add socket, remove socket, read from socket, send to socket}
+    } else {
+        fprintf(stderr, "Poll() call failed.\n");
+        return -1;
+    }
+
+    }
+
 
     struct sockaddr_storage client_address;
     socklen_t client_len = sizeof(client_address);
@@ -102,18 +132,7 @@ int main() {
 
         // getting socket info
         // TODO getting client socket info to log
-        
-        // struct sockaddr client_addr;
-        // memset(&client_addr, 0, sizeof(client_addr));
-        // socklen_t client_addr_len = sizeof(client_addr);
-        // int socknameerr = getpeername(socket_client, &client_addr, &client_addr_len);
-        // if (socknameerr < 0 ) {
-        //     printf("getsockname() failed. (%d)\n", GETSOCKETERRNO());
-        // }
-        // printf("%s %d", client_addr.sa_data, client_addr.sa_family);
-        
-
-        printf("forked process\n");
+    
         char username_conf[] = {"What is your username?\n"};
         char fin_username[32];
         memset(fin_username, 0, sizeof(fin_username));
@@ -132,8 +151,10 @@ int main() {
     // recv ?       
 
     // Try Ncurses
-    CLOSESOCKET(socket_listen);
     free(user_table);
     free(table);
+    free(pfthander);
+    free(pollsocket_ptr);
+    free(listenerfd);
     return 0;
 }
