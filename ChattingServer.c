@@ -52,7 +52,7 @@ int main() {
     pfdhandler_t *pfthander = calloc(1, sizeof(pfthander));
     struct pollfd *pollsocket_ptr = calloc(1, sizeof(struct pollfd));
     pfthander->pollfd_ptr = pollsocket_ptr;
-    pfthander->pollfd_ptr = 1;
+    pfthander->arr_size = 1;
     pfthander->pollfd_num = 0;
     
     // getaddrinfo hints
@@ -100,23 +100,49 @@ int main() {
 
     // Create listener poll fd for appending 
     struct pollfd *listenerfd = (struct pollfd *) calloc(1, sizeof(struct pollfd *)); 
-    int poll_event = poll(pfthander->pollfd_ptr, pfthander->pollfd_num, -1);
     listenerfd->fd = socket_listen; 
     listenerfd->events = POLLIN;
     append_pollfd(pfthander, listenerfd);
-    // Decide if you want to put the listener socket in manually
-    // Since the poll() call needs to be in the while loop
 
     printf("Waiting for connections.\n");
 
     while(1) {
-    // 
-    if (poll_event >= 0) {
-    // for(...) { if poll.revents == (some event); add socket, remove socket, read from socket, send to socket}
-    } else {
-        fprintf(stderr, "Poll() call failed.\n");
-        return -1;
-    }
+        int poll_event = poll(pfthander->pollfd_ptr, pfthander->pollfd_num, -1);
+        if (poll_event >= 0) {
+            for(int i = 0; i < pfthander->pollfd_num; i++) {
+
+                if(pfthander->pollfd_ptr[i].revents == (POLLIN)) {
+                    // if active poll is socket_listen
+                    struct sockaddr_storage client_sock_addr;
+                    socklen_t addrlen = sizeof(client_sock_addr);
+                    if(pfthander->pollfd_ptr[i].fd == socket_listen) {
+                        // accept socket, add to fds list in pfthandler
+                        SOCKET client_socket = accept(socket_listen, &client_sock_addr, &addrlen);
+                        struct pollfd *new_fd = (struct pollfd*) calloc(1, sizeof(struct pollfd));
+                        new_fd->events = (POLLIN || POLLOUT || POLLHUP);
+                        new_fd->fd = client_socket;
+                        append_pollfd(pfthander, new_fd);
+                    } else {
+                        char msgbuff[2048];
+                        memset(msgbuff, 0, sizeof(msgbuff));
+                        recv(pfthander->pollfd_ptr[i].fd, msgbuff, sizeof(msgbuff), 0);
+                        for(int l = 0; l < pfthander->pollfd_num; l++) {
+                            // if socket can recieve messages
+                            if(pfthander->pollfd_ptr[l].revents == (POLLOUT)) {
+                                send(pfthander->pollfd_ptr[l].fd, msgbuff, 2048, 0);
+                            }
+                        }
+                    }
+
+                } // pfthander->pollfd_ptr[i].revents == (POLLIN)
+
+            } // for (int i = 0; i < pfthander->pollfd_num; i++)
+
+            // for(...) { if poll.revents == (some event); add socket, remove socket, read from socket, send to socket}
+        } else {
+            fprintf(stderr, "Poll() call failed.\n");
+            return -1;
+        }
 
     }
 

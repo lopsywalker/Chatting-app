@@ -14,7 +14,9 @@ int append_pollfd(pfdhandler_t *pollhandler, struct pollfd *append_fd) {
     }
     for(int i = 0; i < pollhandler->arr_size; i++) {
         if(pollhandler->pollfd_ptr[i].fd == NULL) {
-            pollhandler->pollfd_ptr[i] = append_fd;
+            pollhandler->pollfd_ptr[i].fd = append_fd->fd;
+            pollhandler->pollfd_ptr[i].events = append_fd->events;
+            pollhandler->pollfd_ptr[i].revents = append_fd->revents;
         }
     }
 }
