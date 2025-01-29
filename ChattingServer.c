@@ -126,15 +126,24 @@ int main() {
                         char msgbuff[2048];
                         memset(msgbuff, 0, sizeof(msgbuff));
                         recv(pfthander->pollfd_ptr[i].fd, msgbuff, sizeof(msgbuff), 0);
+                        // TODO: error handling for recv call
                         for(int l = 0; l < pfthander->pollfd_num; l++) {
                             // if socket can recieve messages
                             if(pfthander->pollfd_ptr[l].revents == (POLLOUT)) {
+                                // TODO: dont send to listner socket
                                 send(pfthander->pollfd_ptr[l].fd, msgbuff, 2048, 0);
                             }
                         }
                     }
 
                 } // pfthander->pollfd_ptr[i].revents == (POLLIN)
+
+                // when client disconnects
+                else if(pfthander->pollfd_ptr[i].revents == (POLLHUP)) {
+                    // remember to CLOSESOCKET() when disconnecting 
+                }
+
+
 
             } // for (int i = 0; i < pfthander->pollfd_num; i++)
 
