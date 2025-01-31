@@ -49,11 +49,11 @@ int main() {
     user_table -> num_of_elems = 0;
 
     // Pollfd array initialization & declaration 
-    pfdhandler_t *pfthander = calloc(1, sizeof(pfthander));
+    pfdhandler_t *pfthandler = calloc(1, sizeof(pfdhandler_t));
     struct pollfd *pollsocket_ptr = calloc(1, sizeof(struct pollfd));
-    pfthander->pollfd_ptr = pollsocket_ptr;
-    pfthander->arr_size = 1;
-    pfthander->pollfd_num = 0;
+    pfthandler->pollfd_ptr = pollsocket_ptr;
+    pfthandler->arr_size = 1;
+    pfthandler->pollfd_num = 0;
     
     // getaddrinfo hints
     struct addrinfo hints;
@@ -86,72 +86,79 @@ int main() {
     // double freeaddr was in while loop
     freeaddrinfo(hostaddr);
 
-    // Dont need to use listen for poll()? 
-    // int listenerr = listen(socket_listen, 5);
-    // if (listenerr < 0) {
-    //     printf("listen() failed. %d\n", GETSOCKETERRNO());
-    //     return 1;
-    // }
+    int listenerr = listen(socket_listen, 5);
+    if (listenerr < 0) {
+        printf("listen() failed. %d\n", GETSOCKETERRNO());
+        return 1;
+    }
 
     // Poll() for windows might be WSAPoll() ? 
     // last arg for poll is timeout (-1 means forever)
     // if timeout is made active poll will return 0 when it fully times out
 
+    struct sockaddr client_sock_addr;
+    socklen_t addrlen = sizeof(client_sock_addr);
 
     // Create listener poll fd for appending 
     struct pollfd *listenerfd = (struct pollfd *) calloc(1, sizeof(struct pollfd *)); 
     listenerfd->fd = socket_listen; 
     listenerfd->events = POLLIN;
-    append_pollfd(pfthander, listenerfd);
+    append_pollfd(pfthandler, listenerfd);
 
     printf("Waiting for connections.\n");
 
     while(1) {
-        int poll_event = poll(pfthander->pollfd_ptr, pfthander->pollfd_num, -1);
-        if (poll_event >= 0) {
-            for(int i = 0; i < pfthander->pollfd_num; i++) {
+        int poll_event = poll(pfthandler->pollfd_ptr, pfthandler->pollfd_num, -1);
 
-                if(pfthander->pollfd_ptr[i].revents == (POLLIN)) {
-                    // if active poll is socket_listen
-                    struct sockaddr_storage client_sock_addr;
-                    socklen_t addrlen = sizeof(client_sock_addr);
-                    if(pfthander->pollfd_ptr[i].fd == socket_listen) {
-                        // accept socket, add to fds list in pfthandler
-                        SOCKET client_socket = accept(socket_listen, &client_sock_addr, &addrlen);
-                        struct pollfd *new_fd = (struct pollfd*) calloc(1, sizeof(struct pollfd));
-                        new_fd->events = (POLLIN || POLLOUT || POLLHUP);
-                        new_fd->fd = client_socket;
-                        append_pollfd(pfthander, new_fd);
-                    } else {
-                        char msgbuff[2048];
-                        memset(msgbuff, 0, sizeof(msgbuff));
-                        recv(pfthander->pollfd_ptr[i].fd, msgbuff, sizeof(msgbuff), 0);
-                        // TODO: error handling for recv call
-                        for(int l = 0; l < pfthander->pollfd_num; l++) {
-                            // if socket can recieve messages
-                            if(pfthander->pollfd_ptr[l].revents == (POLLOUT)) {
-                                // TODO: dont send to listner socket
-                                send(pfthander->pollfd_ptr[l].fd, msgbuff, 2048, 0);
-                            }
-                        }
+        if(poll_event == -1) {
+            perror("poll");
+            exit(1);
+        }
+
+        for(int i = 0; i < pfthandler->pollfd_num; i++) {
+            if(pfthandler->pollfd_ptr[i].revents & (POLLIN)) {
+                // if active poll is socket_listen
+                if(pfthandler->pollfd_ptr[i].fd == socket_listen) {
+                    // accept socket, add to fds list in pfthandler
+                    SOCKET client_socket = accept(socket_listen, &client_sock_addr, &addrlen);
+                    struct pollfd *new_fd = (struct pollfd*) calloc(1, sizeof(struct pollfd));
+                    new_fd->events = POLLIN | POLLOUT | POLLHUP;
+                    new_fd->fd = client_socket;
+                    append_pollfd(pfthandler, new_fd);
+                    if(new_fd->revents & POLLOUT) {
+                        char msg[100] = {"Server Connection confirmed\n"};
+                        send(client_socket, msg, strlen(msg), 0);
                     }
+            // when client disconnects
+            } else if(pfthandler->pollfd_ptr[i].revents & (POLLHUP)) {
+                CLOSESOCKET(pfthandler->pollfd_ptr[i].fd);
+                remove_pollfd(pfthandler, &pfthandler->pollfd_ptr[i]);
+            } else {
+                char msgbuff[2048];
+                memset(msgbuff, 0, sizeof(msgbuff));
+                int recverr = recv(pfthandler->pollfd_ptr[i].fd, msgbuff, sizeof(msgbuff), 0);
 
-                } // pfthander->pollfd_ptr[i].revents == (POLLIN)
-
-                // when client disconnects
-                else if(pfthander->pollfd_ptr[i].revents == (POLLHUP)) {
-                    // remember to CLOSESOCKET() when disconnecting 
+                if (recverr <= 0) {
+                    printf("error with recv(). (%d)\n", GETSOCKETERRNO());
                 }
 
+                // TODO: error handling for recv call
+                for(int l = 0; l < pfthandler->pollfd_num; l++) {
+                    // if socket can recieve messages
+                    if(pfthandler->pollfd_ptr[l].revents & (POLLOUT)) {
+                        // TODO: dont send to listner socket
+                        if(pfthandler->pollfd_ptr[l].fd != socket_listen)
+                        {
+                            send(pfthandler->pollfd_ptr[l].fd, msgbuff, 2048, 0);
+                        }
+                    }
+                }
+            }
 
+            } // pfthandler->pollfd_ptr[i].revents == (POLLIN)
 
-            } // for (int i = 0; i < pfthander->pollfd_num; i++)
+        } // for (int i = 0; i < pfthandler->pollfd_num; i++)
 
-            // for(...) { if poll.revents == (some event); add socket, remove socket, read from socket, send to socket}
-        } else {
-            fprintf(stderr, "Poll() call failed.\n");
-            return -1;
-        }
 
     }
 
@@ -188,7 +195,7 @@ int main() {
     // Try Ncurses
     free(user_table);
     free(table);
-    free(pfthander);
+    free(pfthandler);
     free(pollsocket_ptr);
     free(listenerfd);
     return 0;

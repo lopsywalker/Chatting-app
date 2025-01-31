@@ -25,8 +25,8 @@ char* table_search(table_t *table, size_t table_size, SOCKET* key) {
 
 void append_element(table_t *table, table_elem appending_elem) {
     if(table->table_size <= table->num_of_elems) {
-        realloc(table, table->table_size*2);
-        table->table_size*2;
+        table = (table_t *) realloc(table, table->table_size*2);
+        table->table_size = table->table_size*2;
     }
     for(int i = 0; i < table->table_size; i++) {
         if((table->table[i].key == NULL) && (table->table[i].username == NULL)) {

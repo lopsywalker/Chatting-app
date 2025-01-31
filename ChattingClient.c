@@ -46,7 +46,7 @@ int main() {
 
     struct addrinfo* serveraddr;
     memset(&serveraddr, 0, sizeof(serveraddr));
-    getaddrinfo("0", "8080", &hints, &serveraddr);
+    getaddrinfo("localhost", "8080", &hints, &serveraddr);
 
     SOCKET server_soc = socket(serveraddr->ai_family, serveraddr->ai_socktype, 
             serveraddr->ai_protocol);
@@ -65,8 +65,8 @@ int main() {
 
 
     // Username conf
-    char username_query[32];
-    recv(server_soc, username_query, (size_t) strlen("What is your username?\n"), 0 );
+    char username_query[100];
+    recv(server_soc, username_query, (size_t) sizeof(username_query), 0 );
     printf("%s", username_query);
 
     char username[32];
