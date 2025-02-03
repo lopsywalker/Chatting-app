@@ -9,12 +9,12 @@
 
 typedef struct pollfd_handler { 
     struct pollfd *pollfd_ptr;
-    size_t arr_size;
-    size_t pollfd_num;
+    nfds_t arr_size;
+    nfds_t pollfd_num;
 } pfdhandler_t;
 
 int append_pollfd(pfdhandler_t *pollhandler, struct pollfd *append_fd) {
-    if(pollhandler->pollfd_num >= pollhandler->arr_size) {
+    if(pollhandler->pollfd_num == pollhandler->arr_size) {
         pollhandler->pollfd_ptr = (struct pollfd *) realloc(pollhandler->pollfd_ptr, (pollhandler->arr_size)*2);
         pollhandler->arr_size = pollhandler->arr_size*2;
     }
@@ -22,7 +22,6 @@ int append_pollfd(pfdhandler_t *pollhandler, struct pollfd *append_fd) {
         if(pollhandler->pollfd_ptr[i].fd == 0) {
             pollhandler->pollfd_ptr[i].fd = append_fd->fd;
             pollhandler->pollfd_ptr[i].events = append_fd->events;
-            pollhandler->pollfd_ptr[i].revents = append_fd->revents;
             pollhandler->pollfd_num = pollhandler->pollfd_num + 1; 
             return 0;
         }
@@ -36,6 +35,7 @@ int remove_pollfd(pfdhandler_t *pollhandler, struct pollfd *remove_fd) {
             pollhandler->pollfd_ptr[i].fd = 0;
             pollhandler->pollfd_ptr[i].events = 0;
             pollhandler->pollfd_ptr[i].revents = 0;
+            pollhandler->pollfd_num = pollhandler->pollfd_num - 1;
             return 0;
         }
     }

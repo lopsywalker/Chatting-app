@@ -108,49 +108,48 @@ int main() {
     printf("Waiting for connections.\n");
 
     while(1) {
-        int poll_event = poll(pfthandler->pollfd_ptr, pfthandler->pollfd_num, -1);
+        int poll_event = poll((pfthandler->pollfd_ptr), (pfthandler->pollfd_num), -1);
 
         if(poll_event == -1) {
             perror("poll");
             exit(1);
-        }
+        } 
 
-        for(int i = 0; i < pfthandler->pollfd_num; i++) {
+        for(int i = 0; i < pfthandler->arr_size; i++) {
+            printf("%ld", pfthandler->arr_size);
             if(pfthandler->pollfd_ptr[i].revents & (POLLIN)) {
                 // if active poll is socket_listen
                 if(pfthandler->pollfd_ptr[i].fd == socket_listen) {
                     // accept socket, add to fds list in pfthandler
                     SOCKET client_socket = accept(socket_listen, &client_sock_addr, &addrlen);
                     struct pollfd *new_fd = (struct pollfd*) calloc(1, sizeof(struct pollfd));
-                    new_fd->events = POLLIN | POLLOUT | POLLHUP;
+                    new_fd->events = POLLIN;
                     new_fd->fd = client_socket;
                     append_pollfd(pfthandler, new_fd);
-                    if(new_fd->revents & POLLOUT) {
-                        char msg[100] = {"Server Connection confirmed\n"};
-                        send(client_socket, msg, strlen(msg), 0);
+                    char msg[100] = {"Server Connection confirmed\n"};
+                    send(client_socket, msg, strlen(msg), 0);
+                
+                // when client disconnects
+                } else if(pfthandler->pollfd_ptr[i].revents & (POLLHUP)) {
+                    CLOSESOCKET(pfthandler->pollfd_ptr[i].fd);
+                    remove_pollfd(pfthandler, &pfthandler->pollfd_ptr[i]);
+                } else {
+                    char msgbuff[2048];
+                    memset(msgbuff, 0, sizeof(msgbuff));
+                    int recverr = recv(pfthandler->pollfd_ptr[i].fd, msgbuff, sizeof(msgbuff), 0);
+
+                    if (recverr <= 0) {
+                        printf("error with recv(). (%d)\n", GETSOCKETERRNO());
                     }
-            // when client disconnects
-            } else if(pfthandler->pollfd_ptr[i].revents & (POLLHUP)) {
-                CLOSESOCKET(pfthandler->pollfd_ptr[i].fd);
-                remove_pollfd(pfthandler, &pfthandler->pollfd_ptr[i]);
-            } else {
-                char msgbuff[2048];
-                memset(msgbuff, 0, sizeof(msgbuff));
-                int recverr = recv(pfthandler->pollfd_ptr[i].fd, msgbuff, sizeof(msgbuff), 0);
 
-                if (recverr <= 0) {
-                    printf("error with recv(). (%d)\n", GETSOCKETERRNO());
-                }
-
-                // TODO: error handling for recv call
-                for(int l = 0; l < pfthandler->pollfd_num; l++) {
-                    // if socket can recieve messages
-                    if(pfthandler->pollfd_ptr[l].revents & (POLLOUT)) {
-                        // TODO: dont send to listner socket
-                        if(pfthandler->pollfd_ptr[l].fd != socket_listen)
-                        {
-                            send(pfthandler->pollfd_ptr[l].fd, msgbuff, 2048, 0);
-                        }
+                    // TODO: error handling for recv call
+                    for(int l = 0; l < pfthandler->pollfd_num; l++) {
+                        // if socket can recieve messages
+                        if(pfthandler->pollfd_ptr[l].revents & (POLLOUT)) {
+                            if(pfthandler->pollfd_ptr[l].fd != socket_listen)
+                            {
+                                send(pfthandler->pollfd_ptr[l].fd, msgbuff, 2048, 0);
+                            }
                     }
                 }
             }
