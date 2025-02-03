@@ -116,8 +116,7 @@ int main() {
         } 
 
         for(int i = 0; i < pfthandler->arr_size; i++) {
-            printf("%ld", pfthandler->arr_size);
-            if(pfthandler->pollfd_ptr[i].revents & (POLLIN)) {
+            if(pfthandler->pollfd_ptr[i].revents & POLLIN) {
                 // if active poll is socket_listen
                 if(pfthandler->pollfd_ptr[i].fd == socket_listen) {
                     // accept socket, add to fds list in pfthandler
@@ -126,13 +125,10 @@ int main() {
                     new_fd->events = POLLIN;
                     new_fd->fd = client_socket;
                     append_pollfd(pfthandler, new_fd);
-                    char msg[100] = {"Server Connection confirmed\n"};
+                    printf("%d\n", new_fd->fd);
+                    char msg[100] = {"Server Connection confirmed"};
                     send(client_socket, msg, strlen(msg), 0);
                 
-                // when client disconnects
-                } else if(pfthandler->pollfd_ptr[i].revents & (POLLHUP)) {
-                    CLOSESOCKET(pfthandler->pollfd_ptr[i].fd);
-                    remove_pollfd(pfthandler, &pfthandler->pollfd_ptr[i]);
                 } else {
                     char msgbuff[2048];
                     memset(msgbuff, 0, sizeof(msgbuff));
@@ -141,20 +137,22 @@ int main() {
                     if (recverr <= 0) {
                         printf("error with recv(). (%d)\n", GETSOCKETERRNO());
                     }
+                    SOCKET sender_soc = pfthandler->pollfd_ptr[i].fd;
 
                     // TODO: error handling for recv call
-                    for(int l = 0; l < pfthandler->pollfd_num; l++) {
+                    for(int l = 0; l < pfthandler->arr_size; l++) {
                         // if socket can recieve messages
-                        if(pfthandler->pollfd_ptr[l].revents & (POLLOUT)) {
-                            if(pfthandler->pollfd_ptr[l].fd != socket_listen)
-                            {
-                                send(pfthandler->pollfd_ptr[l].fd, msgbuff, 2048, 0);
+                        if((pfthandler->pollfd_ptr[l].fd != socket_listen) | (pfthandler->pollfd_ptr[l].fd != sender_soc))
+                        {
+                            int send_err = send(pfthandler->pollfd_ptr[l].fd, msgbuff, 2048, 0);
+                            if (send_err <= 0) {
+                                printf("error with send(). (%d)\n", GETSOCKETERRNO());
                             }
+                        }
                     }
                 }
-            }
-
             } // pfthandler->pollfd_ptr[i].revents == (POLLIN)
+
 
         } // for (int i = 0; i < pfthandler->pollfd_num; i++)
 
