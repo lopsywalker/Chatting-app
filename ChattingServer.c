@@ -128,7 +128,14 @@ int main() {
                     printf("%d\n", new_fd->fd);
                     char msg[100] = {"Server Connection confirmed"};
                     send(client_socket, msg, strlen(msg), 0);
-                
+
+                    // Username send
+                    char username_recv[48];
+                    memset(username_recv, 0, sizeof(username_recv));
+                    recv(client_socket, username_recv, sizeof(username_recv), 0);
+                    printf("%s\n", username_recv);
+                    // Username send
+
                 } else {
                     char msgbuff[2048];
                     memset(msgbuff, 0, sizeof(msgbuff));

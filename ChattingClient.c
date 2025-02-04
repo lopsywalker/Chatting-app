@@ -82,14 +82,11 @@ int main() {
     // Connection conf 
 
     // // Username conf
-    // char username_query[100];
-    // recv(server_soc, username_query, (size_t) sizeof(username_query), 0 );
-    // printf("%s", username_query);
-
-    // char username[32];
-    // fgets(username, sizeof(username), stdin);
-
-    // send(server_soc, username, sizeof(username), 0);
+    printf("What is your username?");
+    char username[48];
+    memset(username, 0, sizeof(username));
+    fgets(username, sizeof(username), stdin);
+    send(server_soc, username, sizeof(username), 0);
     // // Username conf
 
     while(1) {
@@ -110,6 +107,7 @@ int main() {
     // how to send from client ?
     // use fgets or smht? but how 
     // to know when to send and not random
+    // probably better to write a seperate function 
     
         // } else if(server_fd[0].revents == POLLOUT) {
         //     char send_msg[4096];
@@ -120,6 +118,7 @@ int main() {
         //     }
         // }
 
+    }
     }
 
 
