@@ -111,7 +111,7 @@ int main() {
         int poll_event = poll((pfthandler->pollfd_ptr), (pfthandler->pollfd_num), -1);
 
         if(poll_event == -1) {
-            perror("poll");
+            printf("error with poll(). (%d)\n", GETSOCKETERRNO());                            
             exit(1);
         } 
 
@@ -129,12 +129,17 @@ int main() {
                     char msg[100] = {"Server Connection confirmed"};
                     send(client_socket, msg, strlen(msg), 0);
 
-                    // Username send
+                    // Username send & add
                     char username_recv[48];
                     memset(username_recv, 0, sizeof(username_recv));
                     recv(client_socket, username_recv, sizeof(username_recv), 0);
                     printf("%s\n", username_recv);
-                    // Username send
+                    table_elem *new_elem = (table_elem *) calloc(1, sizeof(table_elem));
+                    new_elem->key = &client_socket;
+                    new_elem->username = username_recv; 
+                    append_element(user_table, new_elem);
+                    // TODO work on adding username by key
+                    // Username send & add
 
                 } else {
                     char msgbuff[2048];
@@ -142,28 +147,34 @@ int main() {
                     int recverr = recv(pfthandler->pollfd_ptr[i].fd, msgbuff, sizeof(msgbuff), 0);
 
                     if (recverr <= 0) {
-                        printf("error with recv(). (%d)\n", GETSOCKETERRNO());
-                    }
-                    SOCKET sender_soc = pfthandler->pollfd_ptr[i].fd;
+                        if (recverr == 0) {
+                            // Connection closed
+                            printf("Socket %d hung up.\n", pfthandler->pollfd_ptr[i].fd);
+                        } else {
+                            printf("error with recv(). (%d)\n", GETSOCKETERRNO());                            
+                        }
+                        CLOSESOCKET(pfthandler->pollfd_ptr[i].fd);
 
-                    // TODO: error handling for recv call
-                    for(int l = 0; l < pfthandler->arr_size; l++) {
-                        // if socket can recieve messages
-                        if((pfthandler->pollfd_ptr[l].fd != socket_listen) | (pfthandler->pollfd_ptr[l].fd != sender_soc))
-                        {
-                            int send_err = send(pfthandler->pollfd_ptr[l].fd, msgbuff, 2048, 0);
-                            if (send_err <= 0) {
-                                printf("error with send(). (%d)\n", GETSOCKETERRNO());
+                        remove_pollfd(pfthandler, &(pfthandler->pollfd_ptr[i]));
+                    // added this else after recverr and stopped program from exiting out after closing from client
+                    } else {
+                        SOCKET sender_soc = pfthandler->pollfd_ptr[i].fd;
+                        // TODO: error handling for recv call
+                        for(int l = 0; l < pfthandler->arr_size; l++) {
+                            // if socket can recieve messages
+                            if((pfthandler->pollfd_ptr[l].fd != socket_listen) | (pfthandler->pollfd_ptr[l].fd != sender_soc))
+                            {
+                                int send_err = send(pfthandler->pollfd_ptr[l].fd, msgbuff, 2048, 0);
+                                if (send_err <= 0) {
+                                    printf("error with send(). (%d)\n", GETSOCKETERRNO());
+                                }
                             }
                         }
                     }
+                    
                 }
             } // pfthandler->pollfd_ptr[i].revents == (POLLIN)
-
-
         } // for (int i = 0; i < pfthandler->pollfd_num; i++)
-
-
     }
 
 

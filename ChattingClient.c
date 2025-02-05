@@ -63,6 +63,17 @@ int main() {
         return 1;
     }
 
+    // username conf
+    printf("What is your username?\n");
+    char username[48];
+    memset(username, 0, sizeof(username));
+    if(NULL == (fgets(username, sizeof(username), stdin))) {
+        perror("fgets");
+        exit(1);
+    }
+    // username conf 
+
+
     int status = connect(server_soc, serveraddr->ai_addr, serveraddr->ai_addrlen);
     if (status < 0) {
         printf("Connect error.\n");
@@ -81,13 +92,9 @@ int main() {
     printf("%s\n", connection_conf);
     // Connection conf 
 
-    // // Username conf
-    printf("What is your username?");
-    char username[48];
-    memset(username, 0, sizeof(username));
-    fgets(username, sizeof(username), stdin);
+    // // Username sending 
     send(server_soc, username, sizeof(username), 0);
-    // // Username conf
+    // // Username sending
 
     while(1) {
         int poll_err = poll(server_fd, 1, -1);
@@ -96,7 +103,7 @@ int main() {
         } 
 
         if(server_fd[0].revents == POLLIN) {
-            char recv_msg[4096];
+            char recv_msg[2048];
             memset(recv_msg, 0, sizeof(recv_msg));
             int recv_err = recv(server_fd[0].fd, recv_msg, sizeof(recv_msg), 0);
             if(recv_err < 0) {
@@ -110,7 +117,7 @@ int main() {
     // probably better to write a seperate function 
     
         // } else if(server_fd[0].revents == POLLOUT) {
-        //     char send_msg[4096];
+        //     char send_msg[2048];
         //     memset(send_msg, 0, sizeof(send_msg));
         //     int send_err = send(server_fd[0].fd, send_msg, sizeof(send_msg), 0);
         //     if(send_err < 0) {
