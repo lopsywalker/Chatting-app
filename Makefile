@@ -4,5 +4,8 @@ FLAGS= -O2 -Wall -Werror
 server: ChattingServer.c
 	${CC} ChattingServer.c -o server $(FLAGS)
 
-clean: server
-	rm server
+client: ChattingClient.c
+	${CC} ChattingClient.c -o client $(FLAGS)
+
+clean: server client
+	rm server client

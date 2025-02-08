@@ -34,19 +34,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "pollsockhandling.h"
 
 // TODO, client and server aren't communicating for some reason 
 
 int main() {
-    struct addrinfo hints; 
+    
+    // Hint init 
+    struct addrinfo hints;  
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
+    // Addrinfo init
     struct addrinfo* serveraddr;
     memset(&serveraddr, 0, sizeof(serveraddr));
-    getaddrinfo("0", "8080", &hints, &serveraddr);
+    getaddrinfo("localhost", "8080", &hints, &serveraddr);
+
+    // pollsock init
+    struct pollfd *server_fd = (struct pollfd *) calloc(1, sizeof(struct pollfd)); 
+    server_fd->events = POLLIN | POLLOUT; 
 
     SOCKET server_soc = socket(serveraddr->ai_family, serveraddr->ai_socktype, 
             serveraddr->ai_protocol);
@@ -55,46 +63,71 @@ int main() {
         return 1;
     }
 
+    // username conf
+    printf("What is your username?\n");
+    char username[48];
+    memset(username, 0, sizeof(username));
+    if(NULL == (fgets(username, sizeof(username), stdin))) {
+        perror("fgets");
+        exit(1);
+    }
+    // username conf 
+
+
     int status = connect(server_soc, serveraddr->ai_addr, serveraddr->ai_addrlen);
     if (status < 0) {
         printf("Connect error.\n");
         return 1;
     }
-    printf("Connected\n");
     freeaddrinfo(serveraddr);
+    server_fd->fd = server_soc;
 
-
-    // Username conf
-    char username_query[32];
-    recv(server_soc, username_query, (size_t) strlen("What is your username?\n"), 0 );
-    printf("%s", username_query);
-
-    char username[32];
-    fgets(username, sizeof(username), stdin);
-
-    send(server_soc, username, sizeof(username), 0);
-
-    // Username conf
-
-    while(1)
-    {
-    char readfromstdin[4096];
-    memset(readfromstdin, 0, sizeof(readfromstdin));
-    fgets(readfromstdin, sizeof(readfromstdin), stdin);
-    
-    // char msglen[8];
-    // memset(msglen, 0, sizeof(msglen));
-    // itoa(strlen(readfromstdin), msglen, 10);
-
-    // send(server_soc, msglen, strlen(msglen), 0);
-
-    send(server_soc, readfromstdin, strlen(readfromstdin), 0);
-
-    // char recv_msg[4096];
-    // memset(recv_msg, 0, sizeof(recv_msg)); 
-    // recv(server_soc, recv_msg, sizeof(recv_msg), 0);
-    // printf("%s\n",recv_msg);
+    // Connection conf
+    char connection_conf[32];
+    memset(connection_conf, 0, sizeof(connection_conf));
+    int conn_recv_err = recv(server_soc, connection_conf, sizeof(connection_conf), 0);
+    if(conn_recv_err == -1) {
+        printf("Error from recv() %d",GETSOCKETERRNO());
     }
+    printf("%s\n", connection_conf);
+    // Connection conf 
+
+    // // Username sending 
+    send(server_soc, username, sizeof(username), 0);
+    // // Username sending
+
+    while(1) {
+        int poll_err = poll(server_fd, 1, -1);
+        if (poll_err < 0) {
+            printf("Error from poll() %d",GETSOCKETERRNO());
+        } 
+
+        if(server_fd[0].revents == POLLIN) {
+            char recv_msg[2048];
+            memset(recv_msg, 0, sizeof(recv_msg));
+            int recv_err = recv(server_fd[0].fd, recv_msg, sizeof(recv_msg), 0);
+            if(recv_err < 0) {
+                printf("Error from recv() %d\n", GETSOCKETERRNO());
+            }
+            printf("%s", recv_msg);
+
+    // how to send from client ?
+    // use fgets or smht? but how 
+    // to know when to send and not random
+    // probably better to write a seperate function 
+    
+        // } else if(server_fd[0].revents == POLLOUT) {
+        //     char send_msg[2048];
+        //     memset(send_msg, 0, sizeof(send_msg));
+        //     int send_err = send(server_fd[0].fd, send_msg, sizeof(send_msg), 0);
+        //     if(send_err < 0) {
+        //         printf("Erorr from send() %d", GETSOCKETERRNO());
+        //     }
+        // }
+
+    }
+    }
+
 
     CLOSESOCKET(server_soc);
 
