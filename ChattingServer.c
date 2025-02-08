@@ -129,6 +129,18 @@ int main() {
                     char msg[100] = {"Server Connection confirmed"};
                     send(client_socket, msg, strlen(msg), 0);
 
+                    // getting socket info
+                    struct sockaddr_in peer_addr;
+                    socklen_t addr_len;
+                    int peer_err = getpeername(client_socket,(struct sockaddr *) &peer_addr, &addr_len);
+                    if(peer_err == -1) {
+                        printf("error on getpeername(). %d\n", peer_err);
+                    }
+                    char char_ip_addr[16];
+                    memset(char_ip_addr, 0, sizeof(char_ip_addr));
+                    printf("Peer IP address: %s\n", inet_ntoa(peer_addr.sin_addr));
+                    // getting socket info
+
                     // Username send & add
                     char username_recv[48];
                     memset(username_recv, 0, sizeof(username_recv));
@@ -140,6 +152,7 @@ int main() {
                     append_element(user_table, new_elem);
                     // TODO work on adding username by key
                     // Username send & add
+
 
                 } else {
                     char msgbuff[2048];
@@ -156,6 +169,7 @@ int main() {
                         CLOSESOCKET(pfthandler->pollfd_ptr[i].fd);
 
                         remove_pollfd(pfthandler, &(pfthandler->pollfd_ptr[i]));
+                        remove_element(user_table, table_search(user_table, user_table->table_size, &pfthandler->pollfd_ptr[i].fd));
                     // added this else after recverr and stopped program from exiting out after closing from client
                     } else {
                         SOCKET sender_soc = pfthandler->pollfd_ptr[i].fd;
@@ -187,22 +201,9 @@ int main() {
         return 1;
     }
 
-        // getting socket info
-        // TODO getting client socket info to log
+    // getting socket info
+    // TODO getting client socket info to log
     
-        char username_conf[] = {"What is your username?\n"};
-        char fin_username[32];
-        memset(fin_username, 0, sizeof(fin_username));
-
-        send(socket_client, username_conf, strlen(username_conf), 0);
-
-        recv(socket_client, fin_username, 32, 0);
-        printf("%s\n", fin_username);
-
-        table_elem new_user = {&socket_client, fin_username};
-        append_element(user_table, new_user);
-
-
     // closes accepted socket
 
     // recv ?       

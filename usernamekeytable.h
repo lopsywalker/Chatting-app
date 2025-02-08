@@ -2,8 +2,8 @@
 #define SOCKET int 
 
 typedef struct table_element {
-    SOCKET* key;
-    char* username;
+    SOCKET *key;
+    char *username;
 } table_elem;
 
 typedef struct h_table {
@@ -12,12 +12,12 @@ typedef struct h_table {
     table_elem *table;
 }  table_t;
 
-char* table_search(table_t *table, size_t table_size, SOCKET* key) {
+table_elem* table_search(table_t *table, size_t table_size, SOCKET* key) {
     for (size_t i = 0; i < table_size; i++)
     {
         if(table->table[i].key == key)
         {
-            return table->table[i].username;
+            return &(table->table[i]);
         }            
     }
     return NULL;
