@@ -45,7 +45,7 @@ char* username_conf(char *username_arr) {
     initscr();
 
     getmaxyx(stdscr, MaxY, MaxX);
-
+    mvwprintw(stdscr,(MaxY/2)-5,MaxX/4, "What is your username?");
     WINDOW *username_box = newwin(3, MaxX/2, (MaxY/2)-3, MaxX/4);
     WINDOW *username_box_invis = newwin(1, (MaxX/2)-2, (MaxY/2)-2, (MaxX/4)+1);
     refresh();
@@ -120,7 +120,10 @@ int main() {
     send(server_soc, username, sizeof(username), 0);
     // // Username sending
 
+    initscr();
+
     while(1) {
+
         int poll_err = poll(server_fd, 1, -1);
         if (poll_err < 0) {
             printf("Error from poll() %d",GETSOCKETERRNO());
@@ -151,6 +154,9 @@ int main() {
 
     }
     }
+
+    getch();
+    endwin();
 
 
     CLOSESOCKET(server_soc);
