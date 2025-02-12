@@ -35,8 +35,34 @@
 #include <stdlib.h>
 #include <string.h>
 #include "pollsockhandling.h"
+#include <ncurses.h>
 
-// TODO, client and server aren't communicating for some reason 
+
+char* username_conf(char *username_arr) {
+    char username[32];
+    memset(username, 0, sizeof(username));
+    int MaxX, MaxY;
+    initscr();
+
+    getmaxyx(stdscr, MaxY, MaxX);
+
+    WINDOW *username_box = newwin(3, MaxX/2, (MaxY/2)-3, MaxX/4);
+    WINDOW *username_box_invis = newwin(1, (MaxX/2)-2, (MaxY/2)-2, (MaxX/4)+1);
+    refresh();
+    box(username_box,0,0);
+    wrefresh(username_box);
+
+    wgetstr(username_box_invis,username);
+
+    strncpy(username_arr, username, 32);
+
+    endwin();
+
+    delwin(username_box);
+    delwin(username_box_invis);
+
+    return username_arr;
+}
 
 int main() {
     
@@ -64,13 +90,11 @@ int main() {
     }
 
     // username conf
-    printf("What is your username?\n");
-    char username[48];
-    memset(username, 0, sizeof(username));
-    if(NULL == (fgets(username, sizeof(username), stdin))) {
-        perror("fgets");
-        exit(1);
-    }
+    char *username;
+    char temp_user[32];
+    username = (username_conf(temp_user));
+
+    printf("%s\n", username);
     // username conf 
 
 

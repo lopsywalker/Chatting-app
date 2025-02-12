@@ -1,5 +1,5 @@
 CC=gcc
-FLAGS= -O2 -Wall -Werror 
+FLAGS= -O2 -Wall -Werror -lncurses
 
 server: ChattingServer.c
 	${CC} ChattingServer.c -o server $(FLAGS)
