@@ -19,7 +19,6 @@
 
 #endif
 
-
 #if defined(_WIN32)
 #define ISVALIDSOCKET(s) ((s) != INVALID_SOCKET)
 #define CLOSESOCKET(s) closesocket(s)
@@ -50,9 +49,9 @@ int main() {
 
     // Pollfd array initialization & declaration 
     pfdhandler_t *pfthandler = calloc(1, sizeof(pfdhandler_t));
-    struct pollfd *pollsocket_ptr = calloc(1, sizeof(struct pollfd));
+    struct pollfd *pollsocket_ptr = calloc(5, sizeof(struct pollfd));
     pfthandler->pollfd_ptr = pollsocket_ptr;
-    pfthandler->arr_size = 1;
+    pfthandler->arr_size = 5;
     pfthandler->pollfd_num = 0;
     
     // getaddrinfo hints
@@ -102,14 +101,14 @@ int main() {
     // Create listener poll fd for appending 
     struct pollfd *listenerfd = (struct pollfd *) calloc(1, sizeof(struct pollfd *)); 
     listenerfd->fd = socket_listen; 
-    listenerfd->events = POLLIN;
+    listenerfd->events = (POLLIN | POLLHUP);
     append_pollfd(pfthandler, listenerfd);
 
     printf("Waiting for connections.\n");
 
-    // Perhaps using mmap for shared processes? (fork)
-
-    while(1) {
+    for(;;) {
+        // for certain occasions the close from socket side does not work
+        // setting a time out value for the poll so that it stops
         int poll_event = poll((pfthandler->pollfd_ptr), (pfthandler->pollfd_num), -1);
 
         if(poll_event == -1) {
@@ -126,6 +125,8 @@ int main() {
                     struct pollfd *new_fd = (struct pollfd*) calloc(1, sizeof(struct pollfd));
                     new_fd->events = POLLIN;
                     new_fd->fd = client_socket;
+                    // getsockopt(new_fd->fd,)
+                    // Set a timeout for socket that are afk 
                     append_pollfd(pfthandler, new_fd);
                     printf("%d\n", new_fd->fd);
                     char msg[100] = {"Server Connection confirmed"};
@@ -172,24 +173,24 @@ int main() {
 
                         remove_pollfd(pfthandler, &(pfthandler->pollfd_ptr[i]));
                         remove_element(user_table, table_search(user_table, user_table->table_size, &pfthandler->pollfd_ptr[i].fd));
-                    // added this else after recverr and stopped program from exiting out after closing from client
                     } else {
+                        printf("%s\n", msgbuff);
                         SOCKET sender_soc = pfthandler->pollfd_ptr[i].fd;
                         // TODO: error handling for recv call
                         for(int l = 0; l < pfthandler->arr_size; l++) {
-                            // if socket can recieve messages
-                            if((pfthandler->pollfd_ptr[l].fd != socket_listen) | (pfthandler->pollfd_ptr[l].fd != sender_soc))
-                            {
+                            // if socket not listener nor sender
+                            if((pfthandler->pollfd_ptr[l].fd != socket_listen) && (pfthandler->pollfd_ptr[l].fd != sender_soc) 
+                            && (pfthandler->pollfd_ptr[l].fd != 0))  {
                                 int send_err = send(pfthandler->pollfd_ptr[l].fd, msgbuff, 2048, 0);
-                                if (send_err <= 0) {
+                                if (send_err == -1) {
                                     printf("error with send(). (%d)\n", GETSOCKETERRNO());
                                 }
-                            }
+        
                         }
                     }
-                    
+                    }
                 }
-            } // pfthandler->pollfd_ptr[i].revents == (POLLIN)
+            }// pfthandler->pollfd_ptr[i].revents == (POLLIN)
         } // for (int i = 0; i < pfthandler->pollfd_num; i++)
     }
 

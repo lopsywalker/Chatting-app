@@ -34,9 +34,36 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ncurses.h>
+#include <poll.h>
+#include <pthread.h>
 #include "pollsockhandling.h"
 
-// TODO, client and server aren't communicating for some reason 
+
+char* username_conf(char *username_arr) {
+    char username[32];
+    memset(username, 0, sizeof(username));
+    int MaxX, MaxY;
+    initscr();
+
+    getmaxyx(stdscr, MaxY, MaxX);
+    mvwprintw(stdscr,(MaxY/2)-5,MaxX/4, "What is your username?");
+    WINDOW *username_box = newwin(3, MaxX/2, (MaxY/2)-3, MaxX/4);
+    WINDOW *username_box_invis = newwin(1, (MaxX/2)-2, (MaxY/2)-2, (MaxX/4)+1);
+    refresh();
+    box(username_box,0,0);
+    wrefresh(username_box);
+
+    wgetstr(username_box_invis,username);
+
+    strncpy(username_arr, username, 32);
+
+    delwin(username_box);
+    delwin(username_box_invis);
+
+    endwin();
+    return username_arr;
+}
 
 int main() {
     
@@ -64,19 +91,33 @@ int main() {
     }
 
     // username conf
-    printf("What is your username?\n");
-    char username[48];
-    memset(username, 0, sizeof(username));
-    if(NULL == (fgets(username, sizeof(username), stdin))) {
-        perror("fgets");
-        exit(1);
-    }
+    char *username;
+    char temp_user[32];
+    username = (username_conf(temp_user));
     // username conf 
 
 
+    initscr();
+    int MaxX, MaxY;
+    curs_set(0);
+    getmaxyx(stdscr, MaxY, MaxX);
+    WINDOW *main_text = newwin(MaxY-6, MaxX-10, 0, 5);
+    WINDOW *main_text_invis = newwin(MaxY-8, MaxX-12, 1, 6);
+    WINDOW *input_box = newwin(3, MaxX-10, MaxY-5, 5);
+    WINDOW *input_box_invis = newwin(1, MaxX-12, MaxY-4, 6);
+    keypad(stdscr, TRUE);
+    refresh();
+
     int status = connect(server_soc, serveraddr->ai_addr, serveraddr->ai_addrlen);
     if (status < 0) {
-        printf("Connect error.\n");
+        clear();
+        wprintw(stdscr, "Connect error.\n");
+        getch();
+        delwin(main_text);
+        delwin(main_text_invis);
+        delwin(input_box);
+        delwin(input_box_invis);
+        endwin();
         return 1;
     }
     freeaddrinfo(serveraddr);
@@ -87,49 +128,123 @@ int main() {
     memset(connection_conf, 0, sizeof(connection_conf));
     int conn_recv_err = recv(server_soc, connection_conf, sizeof(connection_conf), 0);
     if(conn_recv_err == -1) {
-        printf("Error from recv() %d",GETSOCKETERRNO());
+        clear();
+        wprintw(stdscr, "Error from recv() %d",GETSOCKETERRNO());
+        getch();
+        delwin(main_text);
+        delwin(main_text_invis);
+        delwin(input_box);
+        delwin(input_box_invis);
+        endwin();
     }
-    printf("%s\n", connection_conf);
+
+    clear();
     // Connection conf 
 
     // // Username sending 
     send(server_soc, username, sizeof(username), 0);
     // // Username sending
 
+    // Drawing boxes
+    box(main_text,0,0);
+    box(input_box,0,0);
+    wrefresh(main_text);
+    wrefresh(input_box);
+
     while(1) {
+        char msg[2048];
+        memset(msg, 0, sizeof(msg));
         int poll_err = poll(server_fd, 1, -1);
-        if (poll_err < 0) {
-            printf("Error from poll() %d",GETSOCKETERRNO());
-        } 
 
-        if(server_fd[0].revents == POLLIN) {
-            char recv_msg[2048];
-            memset(recv_msg, 0, sizeof(recv_msg));
-            int recv_err = recv(server_fd[0].fd, recv_msg, sizeof(recv_msg), 0);
-            if(recv_err < 0) {
-                printf("Error from recv() %d\n", GETSOCKETERRNO());
-            }
-            printf("%s", recv_msg);
+        wclear(input_box_invis);
+        wrefresh(input_box_invis);
 
-    // how to send from client ?
-    // use fgets or smht? but how 
-    // to know when to send and not random
-    // probably better to write a seperate function 
-    
-        // } else if(server_fd[0].revents == POLLOUT) {
-        //     char send_msg[2048];
-        //     memset(send_msg, 0, sizeof(send_msg));
-        //     int send_err = send(server_fd[0].fd, send_msg, sizeof(send_msg), 0);
-        //     if(send_err < 0) {
-        //         printf("Erorr from send() %d", GETSOCKETERRNO());
+        // int in = getch();
+
+        // if(in == KEY_MOUSE) {
+        //     if(getmouse(&mouse_event) == OK) {
+        //         if(mouse_event.bstate & BUTTON4_PRESSED) {
+        //             // print
+        //         }
         //     }
         // }
 
-    }
-    }
+
+        // TODO: dont bother with history when scrolling up, pad doesnt work the way u wnat
+        //  It is just better to learn principles of networking over actually making cahtting app
+        
+        if (poll_err < 0) {
+            clear();
+            wprintw(stdscr,"Error from poll() %d",GETSOCKETERRNO());
+            refresh();
+        } 
+
+        if(server_fd[0].revents & POLLIN) {
+            clear();
+            endwin();
+
+            char recv_msg[2048];
+            memset(recv_msg, 0, sizeof(recv_msg));
+            int recv_err = recv(server_fd[0].fd, recv_msg, sizeof(recv_msg), 0);
+            refresh();
+            if(recv_err < 0) {
+                clear();
+                wprintw(stdscr,"Error from recv() %d\n", GETSOCKETERRNO());
+                refresh();
+            }
+            else {
+                wprintw(main_text_invis,"%s\n",recv_msg);
+                wrefresh(main_text_invis);
+            }
+
+        }
+    
+
+        wgetnstr(input_box_invis,msg,sizeof(msg));
+        if(strcmp(msg,"/exit") == 0)    {  
+            // shutdown signals closing of socket 
+            shutdown(server_soc, SHUT_RDWR);
+            shutdown(server_fd[0].fd, SHUT_RDWR);
+            CLOSESOCKET(server_soc);
+            CLOSESOCKET(server_fd[0].fd);
+            // Clears all visuals from screen
+            clear();
+            
+            // clears dynamic mem
+            delwin(main_text);
+            delwin(main_text_invis);
+            delwin(input_box);
+            delwin(input_box_invis);
+
+            // Prints exiting 
+            mvwprintw(stdscr,(MaxY/2),(MaxX/2)-strlen("Press a key to exit."), "Press a key to exit.");
+            getch();
+            endwin();
+
+            return 0;
+        } else {
+            int send_conf = send(server_fd[0].fd, msg, sizeof(msg), 0);
+            if(send_conf < 0) {
+                wprintw(stdscr,"Error from send() %d\n", GETSOCKETERRNO());
+                refresh();
+            }
+        }
+
+        
+        
+    // SOL: calling the send call directly from ncurses
 
 
-    CLOSESOCKET(server_soc);
+    }
+
+    getch();
+    delwin(main_text);
+    delwin(main_text_invis);
+    delwin(input_box);
+    delwin(input_box_invis);
+    endwin();
+
+
 
     return 0;
 }

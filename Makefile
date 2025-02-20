@@ -1,11 +1,11 @@
 CC=gcc
-FLAGS= -O2 -Wall -Werror 
+FLAGS= -O2 -Wall -Werror -lncurses
 
 server: ChattingServer.c
-	${CC} ChattingServer.c -o server $(FLAGS)
+	${CC} ChattingServer.c pollsockhandling.c usernamekeytable.c -o server $(FLAGS)
 
 client: ChattingClient.c
-	${CC} ChattingClient.c -o client $(FLAGS)
+	${CC} ChattingClient.c pollsockhandling.c -o client $(FLAGS)
 
 clean: server client
 	rm server client
