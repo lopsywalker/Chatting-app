@@ -53,7 +53,7 @@ int main() {
     pfthandler->pollfd_ptr = pollsocket_ptr;
     pfthandler->arr_size = 5;
     pfthandler->pollfd_num = 0;
-    
+
     // getaddrinfo hints
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
