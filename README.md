@@ -6,11 +6,21 @@ This was an exploration into some basic C programming as well as some general pr
 ```ncurses library```
 
 ### How to run 
+1. Have at least 1 server instance running in localhost
+  - run by first running `make server` and then `./server` 
+2. Run client instances
+  - similar to server `make client` and then  `./client`
 
 #### Server
-```make server 
-./server```
+```bash
+make server
+```
+```
+```
 
 #### Client
-```make client
-./client```
+```bash
+make client
+```
+
+
