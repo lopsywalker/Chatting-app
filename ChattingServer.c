@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include "usernamekeytable.h"
 #include "pollsockhandling.h"
 
@@ -134,10 +135,10 @@ int main() {
 
                     // getting socket info
                     struct sockaddr_in peer_addr;
-                    socklen_t addr_len;
+                    socklen_t addr_len = (socklen_t) sizeof(peer_addr);
                     int peer_err = getpeername(client_socket,(struct sockaddr *) &peer_addr, &addr_len);
                     if(peer_err == -1) {
-                        printf("error on getpeername(). %d\n", peer_err);
+                        perror("error on getpeername().");
                     }
                     char char_ip_addr[16];
                     memset(char_ip_addr, 0, sizeof(char_ip_addr));
