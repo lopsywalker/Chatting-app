@@ -42,7 +42,9 @@
 typedef struct thread_args{
   struct pollfd *server_fd;
   WINDOW *message_box;
+  WINDOW *main_window;
   bool flag;
+  char *username;
 } thread_args_t;
 
 void *send_thread(void *thread_args) {
@@ -55,14 +57,14 @@ void *send_thread(void *thread_args) {
     // initializing new variables so they can be called easier 
     struct pollfd *server_fd = con_thread_args->server_fd;
     WINDOW *input_box =  con_thread_args->message_box;
-    
+    WINDOW *main_window = con_thread_args->main_window;
+    char *username = con_thread_args->username; 
   while(1){
     // Clear message box buffer  
     wclear(input_box);
     wrefresh(input_box);
 
-    // Memset msg array to have no artefacts from previous use
-    memset(msg, 0, sizeof(msg));
+    // Memset msg array to have no artefacts from previous use memset(msg, 0, sizeof(msg));
 
     // Waiting for input from user 
     wgetnstr(input_box, msg, sizeof(msg));
@@ -72,11 +74,11 @@ void *send_thread(void *thread_args) {
     if(strcmp(msg, "/exit") == 0)    {  
         // shutdown signals closing of socket 
         con_thread_args->flag = true;    
-           
         pthread_exit(NULL); 
-         
     } else {
         int send_conf = send(server_fd[0].fd, msg, sizeof(msg), 0);
+        wprintw(main_window, "%s: %s\n", username, msg);    
+        wrefresh(main_window);
         if(send_conf < 0) {
             wprintw(stdscr,"Error from send() %d\n", GETSOCKETERRNO());
             refresh();
@@ -185,9 +187,10 @@ int main() {
     clear();
     // Connection conf 
 
-    // // Username sending 
+    // Username sending 
     send(server_soc, username, sizeof(username), 0);
-    // // Username sending
+    wrefresh(main_text_invis);
+    // Username sending
 
     // Drawing boxes
     box(main_text,0,0);
@@ -244,7 +247,8 @@ int main() {
     thread_args->server_fd = NULL;
     thread_args->message_box = input_box_invis; 
     thread_args->flag = false;  
-
+    thread_args->username = username;
+    thread_args->main_window = main_text_invis;    
     pthread_create(user_in_thread, NULL, &send_thread, thread_args);
 
     while(1) {

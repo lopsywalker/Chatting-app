@@ -44,9 +44,9 @@ int main() {
     // Hash table initialization & declaration 
     table_t *user_table = (table_t*) calloc(1, sizeof(table_t));
     table_elem *table = (table_elem*) calloc(1, sizeof(table_elem));
-    user_table -> table = table; 
-    user_table -> table_size = 1;
-    user_table -> num_of_elems = 0;
+    user_table->table = table; 
+    user_table->table_size = 1;
+    user_table->num_of_elems = 0;
 
     // Pollfd array initialization & declaration 
     pfdhandler_t *pfthandler = calloc(1, sizeof(pfdhandler_t));
@@ -113,9 +113,9 @@ int main() {
         int poll_event = poll((pfthandler->pollfd_ptr), (pfthandler->pollfd_num), -1);
 
         if(poll_event == -1) {
-            printf("error with poll(). (%d)\n", GETSOCKETERRNO());                            
+            printf("error with poll(). (%d)\n", GETSOCKETERRNO());
             exit(1);
-        } 
+        }
 
         for(int i = 0; i < pfthandler->arr_size; i++) {
             if(pfthandler->pollfd_ptr[i].revents & POLLIN) {
@@ -126,6 +126,7 @@ int main() {
                     struct pollfd *new_fd = (struct pollfd*) calloc(1, sizeof(struct pollfd));
                     new_fd->events = POLLIN;
                     new_fd->fd = client_socket;
+
                     // getsockopt(new_fd->fd,)
                     // Set a timeout for socket that are afk 
                     append_pollfd(pfthandler, new_fd);
@@ -162,7 +163,6 @@ int main() {
                     char msgbuff[2048];
                     memset(msgbuff, 0, sizeof(msgbuff));
                     int recverr = recv(pfthandler->pollfd_ptr[i].fd, msgbuff, sizeof(msgbuff), 0);
-
                     if (recverr <= 0) {
                         if (recverr == 0) {
                             // Connection closed
@@ -177,11 +177,17 @@ int main() {
                     } else {
                         printf("%s\n", msgbuff);
                         SOCKET sender_soc = pfthandler->pollfd_ptr[i].fd;
-                        // TODO: error handling for recv call
                         for(int l = 0; l < pfthandler->arr_size; l++) {
                             // if socket not listener nor sender
                             if((pfthandler->pollfd_ptr[l].fd != socket_listen) && (pfthandler->pollfd_ptr[l].fd != sender_soc) 
                             && (pfthandler->pollfd_ptr[l].fd != 0))  {
+                                char *curr_username;
+                                curr_username = table_search(user_table, user_table->table_size, &pfthandler->pollfd_ptr[l].fd)->username;
+                                int sender_send_err = send(pfthandler->pollfd_ptr[l].fd, curr_username, 32, 0);
+                                if (sender_send_err == -1) {
+                                    printf("error with send(). (%d)\n", GETSOCKETERRNO());
+                                }
+
                                 int send_err = send(pfthandler->pollfd_ptr[l].fd, msgbuff, 2048, 0);
                                 if (send_err == -1) {
                                     printf("error with send(). (%d)\n", GETSOCKETERRNO());

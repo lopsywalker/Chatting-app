@@ -5,10 +5,10 @@
 table_elem* table_search(table_t *table, size_t table_size, SOCKET* key) {
     for (size_t i = 0; i < table_size; i++)
     {
-        if(table->table[i].key == key)
+        if(*(table->table[i].key) == *(key))
         {
             return &(table->table[i]);
-        }            
+        }           
     }
     return NULL;
 }
