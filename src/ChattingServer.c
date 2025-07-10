@@ -177,7 +177,7 @@ int main() {
                     } else {
                         printf("%s\n", msgbuff);
                         SOCKET sender_soc = pfthandler->pollfd_ptr[i].fd;
-                        for(int l = 0; l < pfthandler->arr_size; l++) {
+                        for(int l = 0; l < pfthandler->pollfd_num; l++) {
                             // if socket not listener nor sender
                             if((pfthandler->pollfd_ptr[l].fd != socket_listen) && (pfthandler->pollfd_ptr[l].fd != sender_soc) 
                             && (pfthandler->pollfd_ptr[l].fd != 0))  {
