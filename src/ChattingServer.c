@@ -42,8 +42,8 @@
 int main() {    
 
     // Hash table initialization & declaration 
-    table_t *user_table = (table_t*) calloc(1, sizeof(table_t));
-    table_elem *table = (table_elem*) calloc(1, sizeof(table_elem));
+    table_t *user_table = calloc(1, sizeof(table_t));
+    table_elem **table = calloc(1, sizeof(table_elem *));
     user_table->table = table; 
     user_table->table_size = 1;
     user_table->num_of_elems = 0;
@@ -100,7 +100,7 @@ int main() {
     socklen_t addrlen = sizeof(client_sock_addr);
 
     // Create listener poll fd for appending 
-    struct pollfd *listenerfd = (struct pollfd *) calloc(1, sizeof(struct pollfd *)); 
+    struct pollfd *listenerfd = calloc(1, sizeof(struct pollfd *)); 
     listenerfd->fd = socket_listen; 
     listenerfd->events = (POLLIN | POLLHUP);
     append_pollfd(pfthandler, listenerfd);
@@ -121,13 +121,13 @@ int main() {
             if(pfthandler->pollfd_ptr[i].revents & POLLIN) {
                 // if active poll is socket_listen
                 if(pfthandler->pollfd_ptr[i].fd == socket_listen) {
+
                     // accept socket, add to fds list in pfthandler
                     SOCKET client_socket = accept(socket_listen, &client_sock_addr, &addrlen);
-                    struct pollfd *new_fd = (struct pollfd*) calloc(1, sizeof(struct pollfd));
+                    struct pollfd *new_fd = calloc(1, sizeof(struct pollfd));
                     new_fd->events = POLLIN;
                     new_fd->fd = client_socket;
 
-                    // getsockopt(new_fd->fd,)
                     // Set a timeout for socket that are afk 
                     append_pollfd(pfthandler, new_fd);
                     printf("%d\n", new_fd->fd);
@@ -141,27 +141,22 @@ int main() {
                     if(peer_err == -1) {
                         perror("error on getpeername().");
                     }
-                    char char_ip_addr[16];
-                    memset(char_ip_addr, 0, sizeof(char_ip_addr));
+                    //char char_ip_addr[16] = {0};
                     printf("Peer IP address: %s\n", inet_ntoa(peer_addr.sin_addr));
                     // getting socket info
 
                     // Username send & add
-                    char username_recv[48];
-                    memset(username_recv, 0, sizeof(username_recv));
+                    char username_recv[48] = {0};
                     recv(client_socket, username_recv, sizeof(username_recv), 0);
                     printf("%s\n", username_recv);
-                    table_elem *new_elem = (table_elem *) calloc(1, sizeof(table_elem));
-                    new_elem->key = &client_socket;
-                    new_elem->username = username_recv; 
-                    append_element(user_table, new_elem);
-                    // TODO work on adding username by key
-                    // Username send & add
+                   // table_elem *new_elem = calloc(1, sizeof(table_elem));
+                   // new_elem->key = &client_socket;
+                   // new_elem->username = username_recv; 
+                   // append_element(user_table, new_elem);
 
 
                 } else {
-                    char msgbuff[2048];
-                    memset(msgbuff, 0, sizeof(msgbuff));
+                    char msgbuff[2048] = {0};
                     int recverr = recv(pfthandler->pollfd_ptr[i].fd, msgbuff, sizeof(msgbuff), 0);
                     if (recverr <= 0) {
                         if (recverr == 0) {
@@ -173,7 +168,6 @@ int main() {
                         CLOSESOCKET(pfthandler->pollfd_ptr[i].fd);
 
                         remove_pollfd(pfthandler, &(pfthandler->pollfd_ptr[i]));
-                        remove_element(user_table, table_search(user_table, user_table->table_size, &pfthandler->pollfd_ptr[i].fd));
                     } else {
                         printf("%s\n", msgbuff);
                         SOCKET sender_soc = pfthandler->pollfd_ptr[i].fd;
@@ -181,15 +175,10 @@ int main() {
                             // if socket not listener nor sender
                             if((pfthandler->pollfd_ptr[l].fd != socket_listen) && (pfthandler->pollfd_ptr[l].fd != sender_soc) 
                             && (pfthandler->pollfd_ptr[l].fd != 0))  {
-                                char *curr_username;
-                                curr_username = table_search(user_table, user_table->table_size, &pfthandler->pollfd_ptr[l].fd)->username;
-                                int sender_send_err = send(pfthandler->pollfd_ptr[l].fd, curr_username, 32, 0);
-                                if (sender_send_err == -1) {
-                                    printf("error with send(). (%d)\n", GETSOCKETERRNO());
-                                }
-
-                                int send_err = send(pfthandler->pollfd_ptr[l].fd, msgbuff, 2048, 0);
-                                if (send_err == -1) {
+						    //what is above line for???		
+                                int send_err = send(pfthandler->pollfd_ptr[l].fd, msgbuff, sizeof(msgbuff), 0);
+								 
+								if (send_err == -1) {
                                     printf("error with send(). (%d)\n", GETSOCKETERRNO());
                                 }
         
@@ -212,7 +201,6 @@ int main() {
     }
 
     // getting socket info
-    // TODO getting client socket info to log
     
     // closes accepted socket
 

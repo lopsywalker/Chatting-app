@@ -52,40 +52,36 @@ void *send_thread(void *thread_args) {
     char msg[2048];
 
     thread_args_t *con_thread_args = (thread_args_t *) thread_args;
-    // How to zero out memory like array without using memset?
-    // does type array_name[sizeof(array)] = {0} work? 
-    // initializing new variables so they can be called easier 
     struct pollfd *server_fd = con_thread_args->server_fd;
     WINDOW *input_box =  con_thread_args->message_box;
     WINDOW *main_window = con_thread_args->main_window;
-    char *username = con_thread_args->username; 
-  while(1){
-    // Clear message box buffer  
-    wclear(input_box);
-    wrefresh(input_box);
+    while(1){
+      // Clear message box buffer  
+      wclear(input_box);
+      wrefresh(input_box);
 
-    // Memset msg array to have no artefacts from previous use memset(msg, 0, sizeof(msg));
+      // Memset msg array to have no artefacts from previous use memset(msg, 0, sizeof(msg));
 
-    // Waiting for input from user 
-    wgetnstr(input_box, msg, sizeof(msg));
-    
-    // If user types "/exit", use the flag to tell main thread to exit from client
-    // exiting also includes freeing all dyn memory as well as proper closing of sockets
-    if(strcmp(msg, "/exit") == 0)    {  
-        // shutdown signals closing of socket 
-        con_thread_args->flag = true;    
-        pthread_exit(NULL); 
-    } else {
-        int send_conf = send(server_fd[0].fd, msg, sizeof(msg), 0);
-        wprintw(main_window, "%s: %s\n", username, msg);    
-        wrefresh(main_window);
-        if(send_conf < 0) {
-            wprintw(stdscr,"Error from send() %d\n", GETSOCKETERRNO());
-            refresh();
-        }
+      // Waiting for input from user 
+      wgetnstr(input_box, msg, sizeof(msg));
+      
+      // If user types "/exit", use the flag to tell main thread to exit from client
+      // exiting also includes freeing all dyn memory as well as proper closing of sockets
+      if(strcmp(msg, "/exit") == 0)    {  
+          // shutdown signals closing of socket 
+          con_thread_args->flag = true;    
+          pthread_exit(NULL); 
+      } else {
+          int send_conf = send(server_fd[0].fd, msg, sizeof(msg), 0);
+          wprintw(main_window, "You: %s\n", msg);    
+          wrefresh(main_window);
+          if(send_conf < 0) {
+              wprintw(stdscr,"Error from send() %d\n", GETSOCKETERRNO());
+              refresh();
+          }
+      }
     }
   }
-}
 
 char* username_conf(char *username_arr) {
     char username[32];
@@ -288,18 +284,15 @@ int main() {
         if(server_fd[0].revents & POLLIN) {
             // clear();
             // endwin();
-
-            char recv_msg[2048];
-            memset(recv_msg, 0, sizeof(recv_msg));
+			char recv_msg[2048] = {0};
             int recv_err = recv(server_fd[0].fd, recv_msg, sizeof(recv_msg), 0);
-            // refresh();
             if(recv_err < 0) {
                 clear();
                 wprintw(stdscr,"Error from recv() %d\n", GETSOCKETERRNO());
                 refresh();
             }
             else {
-                wprintw(main_text_invis,"%s\n",recv_msg);
+                wprintw(main_text_invis,"Other: %s\n", recv_msg);
                 wrefresh(main_text_invis);
             }
 
