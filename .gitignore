@@ -1,4 +1,6 @@
 server
 client
+debug_server
+debug_client
 todo.md
 .vscode
