@@ -78,14 +78,13 @@ void *send_thread(void *thread_args) {
           if(send_conf < 0) {
               wprintw(stdscr,"Error from send() %d\n", GETSOCKETERRNO());
               refresh();
-          }
+        }
       }
     }
   }
 
 char* username_conf(char *username_arr) {
-    char username[32];
-    memset(username, 0, sizeof(username));
+    char username[32] = {0};
     int MaxX, MaxY;
     initscr();
 
@@ -122,7 +121,7 @@ int main() {
     getaddrinfo("localhost", "8080", &hints, &serveraddr);
 
     // pollsock init
-    struct pollfd *server_fd = (struct pollfd *) calloc(1, sizeof(struct pollfd)); 
+    struct pollfd *server_fd = calloc(1, sizeof(struct pollfd)); 
     server_fd->events = POLLIN | POLLOUT; 
 
     SOCKET server_soc = socket(serveraddr->ai_family, serveraddr->ai_socktype, 
@@ -217,7 +216,9 @@ int main() {
       delwin(main_text_invis);
       delwin(input_box);
       delwin(input_box_invis);
-      endwin();
+      free(server_fd);
+	  free(user_in_thread); 
+	  endwin();
       return 1;
     } 
 
@@ -236,7 +237,10 @@ int main() {
       delwin(main_text_invis);
       delwin(input_box);
       delwin(input_box_invis);
-      endwin();
+      free(server_fd);
+	  free(user_in_thread);
+	  free(thread_args);
+	  endwin();
       return 1;
     } 
 
@@ -305,7 +309,10 @@ int main() {
     delwin(main_text_invis);
     delwin(input_box);
     delwin(input_box_invis);
-    endwin();
+    free(user_in_thread);
+    free(thread_args);
+    free(server_fd);
+	endwin();
 
 
 
